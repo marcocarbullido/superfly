@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Home</title>
+</head>
+<body>
+    <h2>Home</h2>
+    <p>Welcome, {{ user.username }}!</p>
+    <p><a href="{% url 'logout' %}">Logout</a></p>
+    <p><a href="{% url 'index' %}">Go to Segmentation Viewer</a></p>
+</body>
+</html>
