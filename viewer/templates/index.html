@@ -56,12 +56,12 @@
         <canvas id="baseCanvas"></canvas>
         <canvas id="overlayCanvas"></canvas>
     </div>
+{% if user.is_authenticated %}
     <div id="tools">
         <h3>Tools</h3>
         <button id="panTool" class="btn btn-outline-secondary me-2">Pan</button>
         <button id="selectTool" class="btn btn-outline-secondary me-2">Select</button>
         <button id="brushTool" class="btn btn-outline-secondary">Brush</button>
-        <!-- Selected object display -->
         <div id="selectedInfo" style="margin:10px 0;font-weight:bold;">
             Selected: <span id="selectedIdDisplay">None</span>
         </div>
@@ -70,16 +70,16 @@
         <div style="margin-top:10px;">
             <label>Brush Size: <input id="brushSize" type="number" value="10" min="1" style="width:50px;"></label>
         </div>
-        <!-- Merge Objects moved to separate panel -->
     </div>
     <div id="mergePanel" class="card">
         <div class="card-body">
-        <h3>Merge Objects</h3>
-        <button id="startMerge" class="btn btn-outline-warning me-2">Start Merge</button>
-        <button id="confirmMerge" class="btn btn-outline-success" disabled>Confirm Merge</button>
-        <ul id="mergeList"></ul>
+            <h3>Merge Objects</h3>
+            <button id="startMerge" class="btn btn-outline-warning me-2">Start Merge</button>
+            <button id="confirmMerge" class="btn btn-outline-success" disabled>Confirm Merge</button>
+            <ul id="mergeList"></ul>
+        </div>
     </div>
-</div>
+{% endif %}
 <script>
 const mediaUrl = "{{ media_url }}";
 const indices = {{ indices|safe }};
@@ -156,38 +156,38 @@ function loadFrame() {
         fetch('/mask-ids/' + currentFrame + '/?t=' + ts).then(res => res.json()),
         getColorMap()
     ]).then(([ids, colorMap]) => {
-        maskListEl.innerHTML = '';
-        palette = {};
-        ids.forEach(id => {
-            const key = 'object_' + id;
-            let color = colorMap[key];
-            if (!Array.isArray(color) || color.length !== 3) {
-                const h = (id * 0.618033988749895) % 1;
-                color = hlsToRgb(h, 0.5, 1.0).map(v => Math.floor(v * 255));
-            }
-            palette[id] = color;
-            const li = document.createElement('li');
-            li.dataset.id = id;
-            const box = document.createElement('span');
-            box.className = 'colorBox';
-            box.style.backgroundColor = `rgb(${color[0]},${color[1]},${color[2]})`;
-            li.appendChild(box);
-            li.appendChild(document.createTextNode(id));
-            li.addEventListener('click', () => { selectedId = id; highlightSelected(); });
-            maskListEl.appendChild(li);
-        });
-        highlightSelected();
-        // prepare full mask for editing
-        maskImg = new Image();
-        maskImg.onload = () => {
-            maskDataCanvas = document.createElement('canvas');
-            maskDataCanvas.width = maskImg.width;
-            maskDataCanvas.height = maskImg.height;
-            maskDataCtx = maskDataCanvas.getContext('2d');
-            maskDataCtx.drawImage(maskImg, 0, 0);
-        };
-        maskImg.src = '/mask-only/' + currentFrame + '/?t=' + ts;
-        // draw progressive crop
+        if (maskListEl) {
+            maskListEl.innerHTML = '';
+            palette = {};
+            ids.forEach(id => {
+                const key = 'object_' + id;
+                let color = colorMap[key];
+                if (!Array.isArray(color) || color.length !== 3) {
+                    const h = (id * 0.618033988749895) % 1;
+                    color = hlsToRgb(h, 0.5, 1.0).map(v => Math.floor(v * 255));
+                }
+                palette[id] = color;
+                const li = document.createElement('li');
+                li.dataset.id = id;
+                const box = document.createElement('span');
+                box.className = 'colorBox';
+                box.style.backgroundColor = `rgb(${color[0]},${color[1]},${color[2]})`;
+                li.appendChild(box);
+                li.appendChild(document.createTextNode(id));
+                li.addEventListener('click', () => { selectedId = id; highlightSelected(); });
+                maskListEl.appendChild(li);
+            });
+            highlightSelected();
+            maskImg = new Image();
+            maskImg.onload = () => {
+                maskDataCanvas = document.createElement('canvas');
+                maskDataCanvas.width = maskImg.width;
+                maskDataCanvas.height = maskImg.height;
+                maskDataCtx = maskDataCanvas.getContext('2d');
+                maskDataCtx.drawImage(maskImg, 0, 0);
+            };
+            maskImg.src = '/mask-only/' + currentFrame + '/?t=' + ts;
+        }
         drawWindow(4);
         drawWindow(1);
     }).catch(err => {
@@ -304,13 +304,13 @@ function drawWindow(ds) {
 }
 
     const panBtn = document.getElementById('panTool');
-    panBtn.onclick = () => tool = 'pan';
-    selectBtn.onclick = () => tool = 'select';
-    brushBtn.onclick = () => tool = 'brush';
+    if (panBtn) panBtn.onclick = () => tool = 'pan';
+    if (selectBtn) selectBtn.onclick = () => tool = 'select';
+    if (brushBtn) brushBtn.onclick = () => tool = 'brush';
     const startMergeBtn = document.getElementById('startMerge');
     const confirmMergeBtn = document.getElementById('confirmMerge');
     const mergeListEl = document.getElementById('mergeList');
-    startMergeBtn.onclick = () => {
+    if (startMergeBtn) startMergeBtn.onclick = () => {
       tool = 'merge';
       selectedObjs = [];
       mergePoints = [];
@@ -318,12 +318,11 @@ function drawWindow(ds) {
       confirmMergeBtn.disabled = true;
       drawOverlay();
     };
-    confirmMergeBtn.onclick = () => {
+    if (confirmMergeBtn) confirmMergeBtn.onclick = () => {
       if (selectedObjs.length < 2) {
         alert('Select at least two objects to merge');
         return;
       }
-      // send merge request without caching
       fetch('/merge-objects/', {
         method: 'POST',
         cache: 'no-store',
@@ -338,7 +337,6 @@ function drawWindow(ds) {
           mergePoints = [];
           mergeListEl.innerHTML = '';
           confirmMergeBtn.disabled = true;
-          // Invalidate cached color map so new mapping is fetched
           colorMapCache = null;
           loadFrame();
         } else {
