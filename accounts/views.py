@@ -23,7 +23,7 @@ def home(request):
     return render(request, 'accounts/home.html')
 @login_required
 def admin_panel(request):
-    if not request.user.is_superuser:
+    if not request.user.is_staff:
         return HttpResponseForbidden("You do not have permission to view this page.")
     users = User.objects.all().order_by('username')
     return render(request, 'accounts/admin.html', {'users': users})
