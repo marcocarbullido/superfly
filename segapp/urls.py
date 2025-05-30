@@ -20,8 +20,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', include('accounts.urls')),
     path('', include('viewer.urls')),
+    path('accounts/', include('accounts.urls')),
 ]
 
 if settings.DEBUG:
