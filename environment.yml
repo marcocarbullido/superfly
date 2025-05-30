@@ -1,0 +1,8 @@
+name: superfly-env
+channels:
+  - defaults
+dependencies:
+  - django
+  - pip
+  - pip:
+    - -r requirements.txt
